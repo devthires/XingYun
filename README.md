@@ -30,6 +30,38 @@ XingYun-Web/         前端（Vue 3 + Vite）
 sql/                 业务初始化 SQL
 ```
 
+## 系统截图
+
+### 首页数据看板
+
+![首页数据看板](docs/screenshots/01-首页看板.png)
+
+### 数据大屏
+
+![数据大屏](docs/screenshots/08-数据大屏.png)
+
+### 资产台账
+
+![资产台账](docs/screenshots/02-资产台账.png)
+
+![新增资产弹窗](docs/screenshots/02b-新增资产弹窗.png)
+
+### 资产领用
+
+![资产领用](docs/screenshots/03-资产领用.png)
+
+### 报修单管理
+
+![报修单管理](docs/screenshots/04-报修单管理.png)
+
+### 资产盘点
+
+![资产盘点](docs/screenshots/06-资产盘点.png)
+
+### 耗材库存
+
+![耗材库存](docs/screenshots/07-耗材库存.png)
+
 ## 快速开始
 
 ### 1. 准备环境
