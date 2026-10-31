@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizConsumableMapper">
+
+	<resultMap type="BizConsumable" id="BizConsumableResult">
+		<id     property="consumableId"   column="consumable_id"   />
+		<result property="consumableCode" column="consumable_code" />
+		<result property="consumableName" column="consumable_name" />
+		<result property="spec"           column="spec"            />
+		<result property="unit"           column="unit"            />
+		<result property="stockQty"       column="stock_qty"       />
+		<result property="warnQty"        column="warn_qty"        />
+		<result property="delFlag"        column="del_flag"        />
+		<result property="createBy"       column="create_by"       />
+		<result property="createTime"     column="create_time"     />
+		<result property="updateBy"       column="update_by"       />
+		<result property="updateTime"     column="update_time"     />
+		<result property="remark"         column="remark"          />
+	</resultMap>
+
+	<resultMap type="BizConsumableRecord" id="BizConsumableRecordResult">
+		<id     property="recordId"       column="record_id"       />
+		<result property="consumableId"   column="consumable_id"   />
+		<result property="recordType"     column="record_type"     />
+		<result property="quantity"       column="quantity"        />
+		<result property="beforeQty"      column="before_qty"      />
+		<result property="afterQty"       column="after_qty"       />
+		<result property="content"        column="content"         />
+		<result property="operator"       column="operator"        />
+		<result property="createTime"     column="create_time"     />
+		<result property="consumableCode" column="consumable_code" />
+		<result property="consumableName" column="consumable_name" />
+	</resultMap>
+
+	<select id="selectBizConsumableList" parameterType="BizConsumable" resultMap="BizConsumableResult">
+		select consumable_id, consumable_code, consumable_name, spec, unit, stock_qty, warn_qty, del_flag,
+		       create_by, create_time, update_by, update_time, remark
+		from biz_consumable
+		<where>
+			del_flag = '0'
+			<if test="consumableCode != null and consumableCode != ''">
+				AND consumable_code like concat('%', #{consumableCode}, '%')
+			</if>
+			<if test="consumableName != null and consumableName != ''">
+				AND consumable_name like concat('%', #{consumableName}, '%')
+			</if>
+			<if test="params.lowStock != null and params.lowStock == '1'"><!-- 低库存筛选 -->
+				AND stock_qty &lt;= warn_qty
+			</if>
+		</where>
+		order by create_time desc
+	</select>
+
+	<select id="selectBizConsumableById" parameterType="Long" resultMap="BizConsumableResult">
+		select consumable_id, consumable_code, consumable_name, spec, unit, stock_qty, warn_qty, del_flag,
+		       create_by, create_time, update_by, update_time, remark
+		from biz_consumable
+		where consumable_id = #{consumableId} and del_flag = '0'
+	</select>
+
+	<select id="checkConsumableCodeUnique" parameterType="String" resultMap="BizConsumableResult">
+		select consumable_id, consumable_code from biz_consumable
+		where consumable_code = #{consumableCode} and del_flag = '0' limit 1
+	</select>
+
+	<insert id="insertBizConsumable" parameterType="BizConsumable" useGeneratedKeys="true" keyProperty="consumableId">
+		insert into biz_consumable(
+			consumable_code, consumable_name, spec, unit, stock_qty, warn_qty, create_by, create_time, remark
+		)values(
+			#{consumableCode}, #{consumableName}, #{spec}, #{unit}, #{stockQty}, #{warnQty}, #{createBy}, sysdate(), #{remark}
+		)
+	</insert>
+
+	<update id="updateBizConsumable" parameterType="BizConsumable">
+		update biz_consumable
+		<set>
+			<if test="consumableCode != null and consumableCode != ''">consumable_code = #{consumableCode},</if>
+			<if test="consumableName != null and consumableName != ''">consumable_name = #{consumableName},</if>
+			<if test="spec != null">spec = #{spec},</if>
+			<if test="unit != null">unit = #{unit},</if>
+			<if test="warnQty != null">warn_qty = #{warnQty},</if>
+			<if test="remark != null">remark = #{remark},</if>
+			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+			update_time = sysdate()
+		</set>
+		where consumable_id = #{consumableId}
+	</update>
+
+	<!-- 库存增减：SQL 内做加减运算，天然避免并发读改写覆盖 -->
+	<update id="changeStock">
+		update biz_consumable
+		set stock_qty = stock_qty + #{quantity},
+			update_by = #{operator},
+			update_time = sysdate()
+		where consumable_id = #{consumableId} and del_flag = '0'
+	</update>
+
+	<!-- 逻辑删除 -->
+	<delete id="deleteBizConsumableById" parameterType="Long">
+		update biz_consumable set del_flag = '1' where consumable_id = #{consumableId}
+	</delete>
+
+	<delete id="deleteBizConsumableByIds" parameterType="Long">
+		update biz_consumable set del_flag = '1' where consumable_id in
+		<foreach collection="array" item="consumableId" open="(" separator="," close=")">
+			#{consumableId}
+		</foreach>
+	</delete>
+
+	<insert id="insertConsumableRecord" parameterType="BizConsumableRecord" useGeneratedKeys="true" keyProperty="recordId">
+		insert into biz_consumable_record(
+			consumable_id, record_type, quantity, before_qty, after_qty, content, operator, create_time
+		)values(
+			#{consumableId}, #{recordType}, #{quantity}, #{beforeQty}, #{afterQty}, #{content}, #{operator}, sysdate()
+		)
+	</insert>
+
+	<select id="selectConsumableRecordList" parameterType="BizConsumableRecord" resultMap="BizConsumableRecordResult">
+		select r.record_id, r.consumable_id, r.record_type, r.quantity, r.before_qty, r.after_qty, r.content, r.operator, r.create_time,
+		       c.consumable_code, c.consumable_name
+		from biz_consumable_record r
+			left join biz_consumable c on c.consumable_id = r.consumable_id
+		<where>
+			<if test="consumableId != null">
+				AND r.consumable_id = #{consumableId}
+			</if>
+			<if test="recordType != null and recordType != ''">
+				AND r.record_type = #{recordType}
+			</if>
+			<if test="params.beginCreateTime != null and params.beginCreateTime != ''">
+				AND r.create_time &gt;= #{params.beginCreateTime}
+			</if>
+			<if test="params.endCreateTime != null and params.endCreateTime != ''">
+				AND r.create_time &lt;= #{params.endCreateTime}
+			</if>
+		</where>
+		order by r.create_time desc, r.record_id desc
+	</select>
+
+</mapper>

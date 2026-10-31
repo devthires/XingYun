@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizRepairOrderMapper">
+
+	<resultMap type="BizRepairOrder" id="BizRepairOrderResult">
+		<id     property="repairId"     column="repair_id"     />
+		<result property="repairNo"     column="repair_no"     />
+		<result property="assetId"      column="asset_id"      />
+		<result property="repairUser"   column="repair_user"   />
+		<result property="repairPhone"  column="repair_phone"  />
+		<result property="problemDesc"  column="problem_desc"  />
+		<result property="status"       column="status"        />
+		<result property="handlerName"  column="handler_name"  />
+		<result property="finishTime"   column="finish_time"   />
+		<result property="delFlag"      column="del_flag"      />
+		<result property="createBy"     column="create_by"     />
+		<result property="createTime"   column="create_time"   />
+		<result property="updateBy"     column="update_by"     />
+		<result property="updateTime"   column="update_time"   />
+		<result property="remark"       column="remark"        />
+		<result property="assetName"    column="asset_name"    />
+	</resultMap>
+
+	<sql id="selectRepairOrderVo">
+		select r.repair_id, r.repair_no, r.asset_id, r.repair_user, r.repair_phone, r.problem_desc, r.status,
+		       r.handler_name, r.finish_time, r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+		       a.asset_name
+		from biz_repair_order r
+			left join biz_asset_info a on a.asset_id = r.asset_id
+	</sql>
+
+	<select id="selectBizRepairOrderList" parameterType="BizRepairOrder" resultMap="BizRepairOrderResult">
+		<include refid="selectRepairOrderVo"/>
+		<where>
+			r.del_flag = '0'
+			<if test="repairNo != null and repairNo != ''">
+				AND r.repair_no like concat('%', #{repairNo}, '%')
+			</if>
+			<if test="assetId != null">
+				AND r.asset_id = #{assetId}
+			</if>
+			<if test="assetName != null and assetName != ''">
+				AND a.asset_name like concat('%', #{assetName}, '%')
+			</if>
+			<if test="repairUser != null and repairUser != ''">
+				AND r.repair_user like concat('%', #{repairUser}, '%')
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="params.beginCreateTime != null and params.beginCreateTime != ''"><!-- 报修时间开始 -->
+				AND r.create_time &gt;= #{params.beginCreateTime}
+			</if>
+			<if test="params.endCreateTime != null and params.endCreateTime != ''"><!-- 报修时间结束 -->
+				AND r.create_time &lt;= #{params.endCreateTime}
+			</if>
+		</where>
+		order by r.create_time desc
+	</select>
+
+	<select id="selectBizRepairOrderByRepairId" parameterType="Long" resultMap="BizRepairOrderResult">
+		<include refid="selectRepairOrderVo"/>
+		where r.repair_id = #{repairId} and r.del_flag = '0'
+	</select>
+
+	<!-- 最近报修单（首页看板用） -->
+	<select id="selectRecentRepairOrders" resultMap="BizRepairOrderResult">
+		<include refid="selectRepairOrderVo"/>
+		where r.del_flag = '0'
+		order by r.create_time desc
+		limit #{limit}
+	</select>
+
+	<insert id="insertBizRepairOrder" parameterType="BizRepairOrder" useGeneratedKeys="true" keyProperty="repairId">
+		insert into biz_repair_order(
+			<if test="repairNo != null and repairNo != ''">repair_no,</if>
+			<if test="assetId != null">asset_id,</if>
+			<if test="repairUser != null and repairUser != ''">repair_user,</if>
+			<if test="repairPhone != null">repair_phone,</if>
+			<if test="problemDesc != null and problemDesc != ''">problem_desc,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="handlerName != null">handler_name,</if>
+			<if test="finishTime != null">finish_time,</if>
+			<if test="remark != null">remark,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			create_time
+		)values(
+			<if test="repairNo != null and repairNo != ''">#{repairNo},</if>
+			<if test="assetId != null">#{assetId},</if>
+			<if test="repairUser != null and repairUser != ''">#{repairUser},</if>
+			<if test="repairPhone != null">#{repairPhone},</if>
+			<if test="problemDesc != null and problemDesc != ''">#{problemDesc},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="handlerName != null">#{handlerName},</if>
+			<if test="finishTime != null">#{finishTime},</if>
+			<if test="remark != null">#{remark},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			sysdate()
+		)
+	</insert>
+
+	<update id="updateBizRepairOrder" parameterType="BizRepairOrder">
+		update biz_repair_order
+		<set>
+			<if test="repairNo != null and repairNo != ''">repair_no = #{repairNo},</if>
+			<if test="assetId != null">asset_id = #{assetId},</if>
+			<if test="repairUser != null and repairUser != ''">repair_user = #{repairUser},</if>
+			<if test="repairPhone != null">repair_phone = #{repairPhone},</if>
+			<if test="problemDesc != null and problemDesc != ''">problem_desc = #{problemDesc},</if>
+			<if test="status != null and status != ''">status = #{status},</if>
+			<if test="handlerName != null">handler_name = #{handlerName},</if>
+			<if test="finishTime != null">finish_time = #{finishTime},</if>
+			<if test="remark != null">remark = #{remark},</if>
+			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+			update_time = sysdate()
+		</set>
+		where repair_id = #{repairId}
+	</update>
+
+	<!-- 状态流转专用更新：已完成时写入完成时间，回退到其他状态时清空 -->
+	<update id="changeRepairStatus" parameterType="BizRepairOrder">
+		update biz_repair_order
+		set status = #{status},
+			finish_time =
+			<choose>
+				<when test='"2".equals(status)'>sysdate()</when>
+				<otherwise>null</otherwise>
+			</choose>,
+			update_by = #{updateBy},
+			update_time = sysdate()
+		where repair_id = #{repairId} and del_flag = '0'
+	</update>
+
+	<!-- 逻辑删除 -->
+	<delete id="deleteBizRepairOrderByRepairId" parameterType="Long">
+		update biz_repair_order set del_flag = '1' where repair_id = #{repairId}
+	</delete>
+
+	<delete id="deleteBizRepairOrderByRepairIds" parameterType="Long">
+		update biz_repair_order set del_flag = '1' where repair_id in
+		<foreach collection="array" item="repairId" open="(" separator="," close=")">
+			#{repairId}
+		</foreach>
+	</delete>
+
+	<!-- 统计单号前缀已占用数量：把已删除的单据也算在内，避免流水号与历史单号冲突 -->
+	<select id="countRepairNoByPrefix" parameterType="String" resultType="int">
+		select count(*) from biz_repair_order where repair_no like concat(#{repairNoPrefix}, '%')
+	</select>
+
+	<!-- 统计资产的历史报修单数量（资产删除保护用，含已删除单据） -->
+	<select id="countRepairByAssetId" parameterType="Long" resultType="int">
+		select count(*) from biz_repair_order
+		where asset_id = #{assetId} and del_flag = '0'
+	</select>
+
+</mapper>

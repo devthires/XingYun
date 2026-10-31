@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizMessageMapper">
+
+	<resultMap type="BizMessage" id="BizMessageResult">
+		<id     property="messageId"   column="message_id"   />
+		<result property="userId"       column="user_id"      />
+		<result property="msgType"      column="msg_type"     />
+		<result property="title"        column="title"        />
+		<result property="content"      column="content"      />
+		<result property="readFlag"     column="read_flag"    />
+		<result property="readTime"     column="read_time"    />
+		<result property="createTime"   column="create_time"  />
+	</resultMap>
+
+	<select id="selectBizMessageList" parameterType="BizMessage" resultMap="BizMessageResult">
+		select message_id, user_id, msg_type, title, content, read_flag, read_time, create_time
+		from biz_message
+		<where>
+			user_id = #{userId}
+			<if test="msgType != null and msgType != ''">
+				AND msg_type = #{msgType}
+			</if>
+			<if test="readFlag != null and readFlag != ''">
+				AND read_flag = #{readFlag}
+			</if>
+		</where>
+		order by create_time desc, message_id desc
+	</select>
+
+	<select id="countUnread" resultType="int">
+		select count(*) from biz_message where user_id = #{userId} and read_flag = '0'
+	</select>
+
+	<insert id="insertBizMessage" parameterType="BizMessage" useGeneratedKeys="true" keyProperty="messageId">
+		insert into biz_message(
+			user_id, msg_type, title, content, read_flag, create_time
+		)values(
+			#{userId}, #{msgType}, #{title}, #{content}, '0', sysdate()
+		)
+	</insert>
+
+	<update id="markRead">
+		update biz_message set read_flag = '1', read_time = sysdate()
+		where message_id = #{messageId} and user_id = #{userId} and read_flag = '0'
+	</update>
+
+	<update id="markAllRead">
+		update biz_message set read_flag = '1', read_time = sysdate()
+		where user_id = #{userId} and read_flag = '0'
+	</update>
+
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizAssetInventoryItemMapper">
+
+	<resultMap type="BizAssetInventoryItem" id="BizAssetInventoryItemResult">
+		<id     property="itemId"            column="item_id"          />
+		<result property="inventoryId"       column="inventory_id"     />
+		<result property="assetId"           column="asset_id"         />
+		<result property="snapshotCode"      column="snapshot_code"    />
+		<result property="snapshotName"      column="snapshot_name"    />
+		<result property="snapshotLocation"  column="snapshot_location" />
+		<result property="bookStatus"        column="book_status"      />
+		<result property="result"            column="result"           />
+		<result property="checker"           column="checker"          />
+		<result property="checkTime"         column="check_time"       />
+		<result property="remark"            column="remark"           />
+		<result property="currentStatus"     column="current_status"   />
+	</resultMap>
+
+	<select id="selectItemsByInventoryId" parameterType="Long" resultMap="BizAssetInventoryItemResult">
+		select i.item_id, i.inventory_id, i.asset_id, i.snapshot_code, i.snapshot_name, i.snapshot_location,
+		       i.book_status, i.result, i.checker, i.check_time, i.remark,
+		       a.status as current_status
+		from biz_asset_inventory_item i
+			left join biz_asset_info a on a.asset_id = i.asset_id
+		where i.inventory_id = #{inventoryId}
+		order by i.item_id
+	</select>
+
+	<select id="selectItemById" parameterType="Long" resultMap="BizAssetInventoryItemResult">
+		select item_id, inventory_id, asset_id, snapshot_code, snapshot_name, snapshot_location,
+		       book_status, result, checker, check_time, remark
+		from biz_asset_inventory_item
+		where item_id = #{itemId}
+	</select>
+
+	<insert id="insertItems" useGeneratedKeys="true" keyProperty="itemId">
+		insert into biz_asset_inventory_item(
+			inventory_id, asset_id, snapshot_code, snapshot_name, snapshot_location, book_status, result
+		)values
+		<foreach collection="list" item="item" separator=",">
+			(#{item.inventoryId}, #{item.assetId}, #{item.snapshotCode}, #{item.snapshotName},
+			 #{item.snapshotLocation}, #{item.bookStatus}, #{item.result})
+		</foreach>
+	</insert>
+
+	<update id="updateItemResult" parameterType="BizAssetInventoryItem">
+		update biz_asset_inventory_item
+		set result = #{result},
+			checker = #{checker},
+			check_time = sysdate(),
+			remark = #{remark}
+		where item_id = #{itemId}
+	</update>
+
+	<delete id="deleteItemsByInventoryIds">
+		delete from biz_asset_inventory_item where inventory_id in
+		<foreach collection="inventoryIds" item="inventoryId" open="(" separator="," close=")">
+			#{inventoryId}
+		</foreach>
+	</delete>
+
+</mapper>

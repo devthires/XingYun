@@ -1,0 +1,25 @@
+# Java
+**/target/
+*.class
+*.jar
+*.war
+
+# Node
+**/node_modules/
+**/dist/
+**/.vite/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 运行产物
+logs/
+*.log
+profile/
+upload/

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizAssetRecordMapper">
+
+	<resultMap type="BizAssetRecord" id="BizAssetRecordResult">
+		<id     property="recordId"      column="record_id"      />
+		<result property="assetId"       column="asset_id"       />
+		<result property="recordType"    column="record_type"    />
+		<result property="content"       column="content"        />
+		<result property="beforeStatus"  column="before_status"  />
+		<result property="afterStatus"   column="after_status"   />
+		<result property="operator"      column="operator"       />
+		<result property="createTime"    column="create_time"    />
+		<result property="assetCode"     column="asset_code"     />
+		<result property="assetName"     column="asset_name"     />
+	</resultMap>
+
+	<select id="selectBizAssetRecordList" parameterType="BizAssetRecord" resultMap="BizAssetRecordResult">
+		select r.record_id, r.asset_id, r.record_type, r.content, r.before_status, r.after_status, r.operator, r.create_time,
+		       a.asset_code, a.asset_name
+		from biz_asset_record r
+			left join biz_asset_info a on a.asset_id = r.asset_id
+		<where>
+			<if test="assetId != null">
+				AND r.asset_id = #{assetId}
+			</if>
+			<if test="assetCode != null and assetCode != ''">
+				AND a.asset_code like concat('%', #{assetCode}, '%')
+			</if>
+			<if test="assetName != null and assetName != ''">
+				AND a.asset_name like concat('%', #{assetName}, '%')
+			</if>
+			<if test="recordType != null and recordType != ''">
+				AND r.record_type = #{recordType}
+			</if>
+			<if test="params.beginCreateTime != null and params.beginCreateTime != ''"><!-- 操作时间开始 -->
+				AND r.create_time &gt;= #{params.beginCreateTime}
+			</if>
+			<if test="params.endCreateTime != null and params.endCreateTime != ''"><!-- 操作时间结束 -->
+				AND r.create_time &lt;= #{params.endCreateTime}
+			</if>
+		</where>
+		order by r.create_time desc, r.record_id desc
+	</select>
+
+	<insert id="insertBizAssetRecord" parameterType="BizAssetRecord" useGeneratedKeys="true" keyProperty="recordId">
+		insert into biz_asset_record(
+			asset_id, record_type, content, before_status, after_status, operator, create_time
+		)values(
+			#{assetId}, #{recordType}, #{content}, #{beforeStatus}, #{afterStatus}, #{operator}, #{createTime}
+		)
+	</insert>
+
+	<select id="countRecordByAssetId" resultType="int">
+		select count(*) from biz_asset_record where asset_id = #{assetId}
+	</select>
+
+</mapper>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizAssetUseMapper">
+
+	<resultMap type="BizAssetUse" id="BizAssetUseResult">
+		<id     property="useId"             column="use_id"              />
+		<result property="assetId"           column="asset_id"            />
+		<result property="userId"            column="user_id"             />
+		<result property="useTime"           column="use_time"            />
+		<result property="expectReturnTime"  column="expect_return_time"  />
+		<result property="actualReturnTime"  column="actual_return_time"  />
+		<result property="status"            column="status"              />
+		<result property="delFlag"           column="del_flag"            />
+		<result property="createBy"          column="create_by"           />
+		<result property="createTime"        column="create_time"         />
+		<result property="updateBy"          column="update_by"           />
+		<result property="updateTime"        column="update_time"         />
+		<result property="remark"            column="remark"              />
+		<result property="assetName"         column="asset_name"          />
+		<result property="assetCode"         column="asset_code"          />
+		<result property="nickName"          column="nick_name"           />
+	</resultMap>
+
+	<sql id="selectAssetUseVo">
+		select u.use_id, u.asset_id, u.user_id, u.use_time, u.expect_return_time, u.actual_return_time, u.status,
+		       u.del_flag, u.create_by, u.create_time, u.update_by, u.update_time, u.remark,
+		       a.asset_name, a.asset_code, s.nick_name
+		from biz_asset_use u
+			left join biz_asset_info a on a.asset_id = u.asset_id
+			left join sys_user s on s.user_id = u.user_id
+	</sql>
+
+	<select id="selectBizAssetUseList" parameterType="BizAssetUse" resultMap="BizAssetUseResult">
+		<include refid="selectAssetUseVo"/>
+		<where>
+			u.del_flag = '0'
+			<if test="assetId != null">
+				AND u.asset_id = #{assetId}
+			</if>
+			<if test="assetName != null and assetName != ''">
+				AND a.asset_name like concat('%', #{assetName}, '%')
+			</if>
+			<if test="userId != null">
+				AND u.user_id = #{userId}
+			</if>
+			<if test="nickName != null and nickName != ''">
+				AND s.nick_name like concat('%', #{nickName}, '%')
+			</if>
+			<if test="status != null and status != ''">
+				AND u.status = #{status}
+			</if>
+			<if test="params.beginUseTime != null and params.beginUseTime != ''"><!-- 领用时间开始 -->
+				AND u.use_time &gt;= #{params.beginUseTime}
+			</if>
+			<if test="params.endUseTime != null and params.endUseTime != ''"><!-- 领用时间结束 -->
+				AND u.use_time &lt;= #{params.endUseTime}
+			</if>
+		</where>
+		order by u.create_time desc
+	</select>
+
+	<select id="selectBizAssetUseByUseId" parameterType="Long" resultMap="BizAssetUseResult">
+		<include refid="selectAssetUseVo"/>
+		where u.use_id = #{useId} and u.del_flag = '0'
+	</select>
+
+	<insert id="insertBizAssetUse" parameterType="BizAssetUse" useGeneratedKeys="true" keyProperty="useId">
+		insert into biz_asset_use(
+			<if test="assetId != null">asset_id,</if>
+			<if test="userId != null">user_id,</if>
+			<if test="useTime != null">use_time,</if>
+			<if test="expectReturnTime != null">expect_return_time,</if>
+			<if test="actualReturnTime != null">actual_return_time,</if>
+			<if test="status != null and status != ''">status,</if>
+			<if test="remark != null">remark,</if>
+			<if test="createBy != null and createBy != ''">create_by,</if>
+			create_time
+		)values(
+			<if test="assetId != null">#{assetId},</if>
+			<if test="userId != null">#{userId},</if>
+			<if test="useTime != null">#{useTime},</if>
+			<if test="expectReturnTime != null">#{expectReturnTime},</if>
+			<if test="actualReturnTime != null">#{actualReturnTime},</if>
+			<if test="status != null and status != ''">#{status},</if>
+			<if test="remark != null">#{remark},</if>
+			<if test="createBy != null and createBy != ''">#{createBy},</if>
+			sysdate()
+		)
+	</insert>
+
+	<update id="updateBizAssetUse" parameterType="BizAssetUse">
+		update biz_asset_use
+		<set>
+			<if test="assetId != null">asset_id = #{assetId},</if>
+			<if test="userId != null">user_id = #{userId},</if>
+			<if test="useTime != null">use_time = #{useTime},</if>
+			<if test="expectReturnTime != null">expect_return_time = #{expectReturnTime},</if>
+			<if test="actualReturnTime != null">actual_return_time = #{actualReturnTime},</if>
+			<if test="status != null and status != ''">status = #{status},</if>
+			<if test="remark != null">remark = #{remark},</if>
+			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+			update_time = sysdate()
+		</set>
+		where use_id = #{useId}
+	</update>
+
+	<!-- 状态流转专用更新：已归还时写入实际归还时间，回退到其他状态时清空 -->
+	<update id="changeUseStatus" parameterType="BizAssetUse">
+		update biz_asset_use
+		set status = #{status},
+			actual_return_time =
+			<choose>
+				<when test='"2".equals(status)'>sysdate()</when>
+				<otherwise>null</otherwise>
+			</choose>,
+			update_by = #{updateBy},
+			update_time = sysdate()
+		where use_id = #{useId} and del_flag = '0'
+	</update>
+
+	<!-- 逻辑删除 -->
+	<delete id="deleteBizAssetUseByUseId" parameterType="Long">
+		update biz_asset_use set del_flag = '1' where use_id = #{useId}
+	</delete>
+
+	<delete id="deleteBizAssetUseByUseIds" parameterType="Long">
+		update biz_asset_use set del_flag = '1' where use_id in
+		<foreach collection="array" item="useId" open="(" separator="," close=")">
+			#{useId}
+		</foreach>
+	</delete>
+
+	<!-- 统计资产进行中的领用申请（审批中/使用中），防止同一资产被重复申请 -->
+	<select id="countActiveUseByAssetId" parameterType="Long" resultType="int">
+		select count(*) from biz_asset_use where asset_id = #{assetId} and status in ('0', '1') and del_flag = '0'
+	</select>
+
+	<!-- 逾期未归还且未提醒过的领用单（定时任务用） -->
+	<select id="selectOverdueUseOrders" resultMap="BizAssetUseResult">
+		select u.use_id, u.asset_id, u.user_id, u.use_time, u.expect_return_time, a.asset_name
+		from biz_asset_use u
+			left join biz_asset_info a on a.asset_id = u.asset_id
+		where u.del_flag = '0' and u.status = '1' and u.overdue_remind = '0'
+		  and u.expect_return_time is not null and u.expect_return_time &lt; now()
+	</select>
+
+	<update id="markOverdueReminded" parameterType="Long">
+		update biz_asset_use set overdue_remind = '1' where use_id = #{useId}
+	</update>
+
+</mapper>

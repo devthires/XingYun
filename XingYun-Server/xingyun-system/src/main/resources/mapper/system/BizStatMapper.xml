@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BizStatMapper">
+
+	<!-- 看板汇总数字 -->
+	<select id="selectDashboardCount" resultType="map">
+		select
+			(select count(*) from biz_asset_info where del_flag = '0') as assetTotal,
+			(select count(*) from biz_repair_order where del_flag = '0' and status = '0') as pendingRepairs,
+			(select count(*) from biz_asset_info where del_flag = '0' and status = '2') as repairingAssets,
+			(select count(*) from biz_asset_info where del_flag = '0' and date(create_time) = curdate()) as todayAssets
+	</select>
+
+	<!-- 资产状态分布 -->
+	<select id="selectAssetStatusStats" resultType="map">
+		select status, count(*) as cnt
+		from biz_asset_info
+		where del_flag = '0'
+		group by status
+	</select>
+
+	<!-- 近7天报修趋势（无报修的日期自然缺失，由前端补零） -->
+	<select id="selectRepairTrend" resultType="map">
+		select date_format(create_time, '%m-%d') as repairDate, count(*) as cnt
+		from biz_repair_order
+		where del_flag = '0' and create_time &gt;= date_sub(curdate(), interval 6 day)
+		group by date_format(create_time, '%m-%d')
+		order by repairDate
+	</select>
+
+	<!-- 近30天报修趋势（大屏用） -->
+	<select id="selectRepairTrend30" resultType="map">
+		select date_format(create_time, '%m-%d') as repairDate, count(*) as cnt
+		from biz_repair_order
+		where del_flag = '0' and create_time &gt;= date_sub(curdate(), interval 29 day)
+		group by date_format(create_time, '%m-%d')
+		order by repairDate
+	</select>
+
+	<!-- 资产分类分布（大屏用） -->
+	<select id="selectAssetCategoryStats" resultType="map">
+		select category, count(*) as cnt
+		from biz_asset_info
+		where del_flag = '0'
+		group by category
+	</select>
+
+	<!-- 领用状态分布（大屏用） -->
+	<select id="selectUseStatusStats" resultType="map">
+		select status, count(*) as cnt
+		from biz_asset_use
+		where del_flag = '0'
+		group by status
+	</select>
+
+	<!-- 资产总值汇总（大屏用） -->
+	<select id="selectAssetValueSummary" resultType="map">
+		select ifnull(sum(price), 0) as assetValueTotal, count(*) as assetCount
+		from biz_asset_info
+		where del_flag = '0'
+	</select>
+
+	<!-- 低库存耗材清单（大屏用） -->
+	<select id="selectConsumableLowList" resultType="map">
+		select consumable_name as consumableName, spec, unit, stock_qty as stockQty, warn_qty as warnQty
+		from biz_consumable
+		where del_flag = '0' and stock_qty &lt;= warn_qty
+		order by stock_qty
+	</select>
+
+</mapper>
